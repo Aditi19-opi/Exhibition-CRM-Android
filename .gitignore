@@ -14,3 +14,15 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Kotlin and IDE caches
+.kotlin/
+.idea/
+
+# Build output
+**/build/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example

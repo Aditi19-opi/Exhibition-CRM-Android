@@ -1,118 +1,161 @@
 package com.example.kotlinpractice.ui
 
+import android.app.Activity
+import android.content.Context.MODE_PRIVATE
+import android.os.Build
+import androidx.activity.compose.BackHandler
+import androidx.annotation.RequiresApi
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.edit
+import com.example.kotlinpractice.network.ExhibitionApi
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import com.example.kotlinpractice.network.CustomerApi
 
 enum class ToggleScreen {
     Login,
     Register,
     Dashboard,
     AllCustomers,
-//    Reports
+    AddCustomer,
+    Exhibition,
+    AddExhibition
+
 
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AuthScreen() {
-
+    val scope = rememberCoroutineScope()
     val customersList = remember {
-        mutableStateListOf(
-            Customer(
-                name = "Case",
-                company = "ABC Technologies",
-                phone = "+91 98765 43210",
-                email = "case@abctech.com",
+        mutableStateListOf<Customer>()
+    }
 
-                time = "Today, 10:24 AM",
-                status = "New",
-                statusColor = Color(0xFF10B981),
-                statusBg = Color(0xFFECFDF5),
-                tags = listOf("Interested", "Website")
-            ),
+    var customersError by remember {
+        mutableStateOf<String?>(null)
+    }
 
-            Customer(
-                name = "Fred",
-                company = "ABC Technologies",
-                phone = "+91 98123 45678",
-                email = "fred@abctech.com",
+    var isLoadingCustomers by remember {
+        mutableStateOf(false)
+    }
 
-                time = "Today, 09:45 AM",
-                status = "New",
-                statusColor = Color(0xFF10B981),
-                statusBg = Color(0xFFECFDF5),
-                tags = listOf("New Lead", "Exhibition")
-            ),
+    val exhibitionsList = remember {
+        mutableStateListOf<Exhibition>()
+    }
 
-            Customer(
-                name = "Rahul Sharma",
-                company = "ABC Technologies",
-                phone = "+91 99887 66554",
-                email = "rahul@abctech.com",
+    var exhibitionsError by remember {
+        mutableStateOf<String?>(null)
+    }
 
-                time = "Today, 10:24 AM",
-                status = "New",
-                statusColor = Color(0xFF10B981),
-                statusBg = Color(0xFFECFDF5),
-                tags = listOf("Interested", "Follow Up")
-            ),
+    val context = LocalContext.current
 
-            Customer(
-                name = "Priya Mehta",
-                company = "XYZ Solutions",
-                phone = "+91 98765 12345",
-                email = "priya@xyzsolutions.com",
+    val sharedPreferences = remember {
+        context.getSharedPreferences("app_prefs", MODE_PRIVATE)
+    }
 
-                time = "Today, 09:15 AM",
-                status = "Follow Up",
-                statusColor = Color(0xFFF59E0B),
-                statusBg = Color(0xFFFEF3C7),
-                tags = listOf("Follow Up", "Product Demo")
-            ),
+    val isLoggedIn = sharedPreferences.getBoolean("is_logged_in", false)
 
-            Customer(
-                name = "Aman Gupta",
-                company = "TechWorld",
-                phone = "+91 91234 56789",
-                email = "aman@techworld.com",
-
-                time = "Yesterday, 04:32 PM",
-                status = "Confirmed",
-                statusColor = Color(0xFF3B82F6),
-                statusBg = Color(0xFFEFF6FF),
-                tags = listOf("Confirmed", "Premium")
-            ),
-
-            Customer(
-                name = "Sneha Verma",
-                company = "Global Enterprises",
-                phone = "+91 97654 32109",
-                email = "sneha@globalenterprises.com",
-
-                time = "Yesterday, 11:20 AM",
-                status = "New",
-                statusColor = Color(0xFF10B981),
-                statusBg = Color(0xFFECFDF5),
-                tags = listOf("New Lead", "Business")
-            ),
-
-            Customer(
-                name = "Vikram Singh",
-                company = "Innovate Corp",
-                phone = "+91 98989 76767",
-                email = "vikram@innovatecorp.com",
-
-                time = "2 days ago",
-                status = "Follow Up",
-                statusColor = Color(0xFFF59E0B),
-                statusBg = Color(0xFFFEF3C7),
-                tags = listOf("Follow Up", "Interested")
-            )
+    var currentScreen by remember {
+        mutableStateOf(
+            if (isLoggedIn) {
+                ToggleScreen.Dashboard
+            } else {
+                ToggleScreen.Login
+            }
         )
     }
 
-    var currentScreen by remember {
-        mutableStateOf(ToggleScreen.Login)
+    suspend fun refreshExhibitions() {
+        try {
+            val result = ExhibitionApi.getExhibitions()
+
+            exhibitionsList.clear()
+            exhibitionsList.addAll(result)
+
+            exhibitionsError = null
+        } catch (e: Exception) {
+            exhibitionsError =
+                e.message ?: "Failed to load exhibitions"
+
+            e.printStackTrace()
+        }
+    }
+
+    suspend fun refreshCustomers() {
+        isLoadingCustomers = true
+
+        try {
+            val result = CustomerApi.getCustomers()
+
+            customersList.clear()
+            customersList.addAll(result)
+
+            customersError = null
+        } catch (e: Exception) {
+            customersError = e.message ?: "Failed to load customers"
+            e.printStackTrace()
+        } finally {
+            isLoadingCustomers = false
+        }
+    }
+
+    LaunchedEffect(currentScreen) {
+        when (currentScreen) {
+            ToggleScreen.Exhibition,
+            ToggleScreen.AddCustomer -> refreshExhibitions()
+
+            ToggleScreen.AllCustomers -> refreshCustomers()
+
+            else -> Unit
+        }
+    }
+
+
+
+    var selectedCustomerExhibition by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    var selectedExhibitionId by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    BackHandler {
+
+        when (currentScreen) {
+
+            ToggleScreen.AddCustomer -> {
+                currentScreen = ToggleScreen.AllCustomers
+            }
+
+            ToggleScreen.AllCustomers -> {
+                currentScreen = ToggleScreen.Dashboard
+            }
+
+            ToggleScreen.Exhibition -> {
+                currentScreen = ToggleScreen.Dashboard
+            }
+
+            ToggleScreen.AddExhibition -> {
+                currentScreen = ToggleScreen.Exhibition
+            }
+
+            ToggleScreen.Register -> {
+                currentScreen = ToggleScreen.Login
+            }
+
+            ToggleScreen.Dashboard -> {
+                (context as? Activity)?.finish()
+            }
+
+            ToggleScreen.Login -> {
+                (context as? Activity)?.finish()
+            }
+        }
     }
 
     when (currentScreen) {
@@ -122,6 +165,10 @@ fun AuthScreen() {
                 currentScreen = ToggleScreen.Register
             },
             onNavigateToDashboard = {
+                sharedPreferences.edit {
+                    putBoolean("is_logged_in", true)
+                }
+
                 currentScreen = ToggleScreen.Dashboard
             }
         )
@@ -132,27 +179,90 @@ fun AuthScreen() {
             }
         )
 
-        ToggleScreen.Dashboard, ToggleScreen.AllCustomers -> {
-            MainScreen(
-                currentScreen = currentScreen,
-                customersList = customersList,
-                onNavigate = {
-                    currentScreen = it
-                },
-                onLogout = {
-                    currentScreen = ToggleScreen.Login
-                },
-                onRemoveCustomer = {
-                    customersList.remove(it)
+        ToggleScreen.Dashboard,
+        ToggleScreen.AllCustomers,
+        ToggleScreen.Exhibition -> MainScreen(
+            currentScreen = currentScreen,
+            customersList = customersList,
+            exhibitions = exhibitionsList,
+            selectedCustomerExhibition = selectedCustomerExhibition,
+            onNavigate = { screen ->
+                currentScreen = screen
+            },
+            onLogout = {
+                sharedPreferences.edit {
+                    putBoolean("is_logged_in", false)
                 }
-            )
-        }
 
-//        ToggleScreen.Reports -> ToggleScreen.Reports(
-//            onNavigateBack = {
-//                currentScreen = ToggleScreen.Dashboard
-//            }
-//        )
+                currentScreen = ToggleScreen.Login
+            },
+            onRemoveCustomer = {
+                customersList.remove(it)
+            },
+            onBack = {
+                currentScreen = ToggleScreen.Dashboard
+            },
+            onViewCustomers = { exhibitionName ->
+                selectedCustomerExhibition = exhibitionName
+                currentScreen = ToggleScreen.AllCustomers
+            },
+
+            )
+
+
+        ToggleScreen.AddCustomer -> AddCustomer(
+            customers = customersList,
+            exhibitions = exhibitionsList,
+            selectedExhibitionId = selectedExhibitionId,
+            onExhibitionSelected = { id ->
+                selectedExhibitionId = id
+            },
+            onBack = {
+                currentScreen = ToggleScreen.AllCustomers
+            },
+            onSave = { newCustomer, exhibitionId, onResult ->
+                customersError = null
+
+                scope.launch {
+                    try {
+                        CustomerApi.addCustomer(newCustomer, exhibitionId)
+                        onResult(true)
+                        refreshCustomers()
+//                        currentScreen = ToggleScreen.AllCustomers
+                    } catch (e: Exception) {
+                        customersError = e.message ?: "Failed to save customer"
+                        android.util.Log.e(
+                            "CustomerSave",
+                            "Failed to save customer",
+                            e
+                        )
+                        onResult(false)
+                    }
+                }
+            }
+        )
+
+
+
+        ToggleScreen.AddExhibition -> AddExhibition(
+            onBack = {
+                currentScreen = ToggleScreen.Exhibition
+            },
+            onSave = { newExhibition ->
+                exhibitionsList.add(0, newExhibition)
+                currentScreen = ToggleScreen.Exhibition
+                scope.launch {
+                    try {
+                        ExhibitionApi.addExhibition(newExhibition)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            },
+            exhibition = exhibitionsList
+        )
+
+
     }
 }
 

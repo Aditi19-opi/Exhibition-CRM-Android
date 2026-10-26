@@ -1,6 +1,8 @@
 package com.example.kotlinpractice.ui
 
+import android.os.Build
 import android.system.Os.remove
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
@@ -11,7 +13,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Business
+import androidx.compose.material.icons.filled.Dashboard
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.People
@@ -39,14 +45,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     currentScreen: ToggleScreen,
     customersList: List<Customer>,
+    exhibitions: MutableList<Exhibition>,
+    selectedCustomerExhibition: String?,
+    onViewCustomers: (String) -> Unit,
     onNavigate: (ToggleScreen) -> Unit,
     onLogout: () -> Unit,
     onRemoveCustomer: (Customer) -> Unit,
+    onBack: () -> Unit,
+
 ) {
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -60,7 +72,7 @@ fun MainScreen(
                 Spacer(modifier = Modifier.height(24.dp))
                 Text(
                     text = "Exhibition CRM",
-                    fontSize = 18.sp,
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier
                         .align(Alignment.Start)
@@ -77,8 +89,8 @@ fun MainScreen(
                 NavigationDrawerItem(
                     icon = {
                         Icon(
-                            imageVector = Icons.Default.Home,
-                            contentDescription = "Home",
+                            imageVector = Icons.Default.Dashboard,
+                            contentDescription = "Dashboard",
                             tint = Color(0xFF6366F1)
                         )
                     },
@@ -113,23 +125,22 @@ fun MainScreen(
                     },
                     modifier = Modifier.padding(horizontal = 12.dp)
                 )
-
-//                NavigationDrawerItem(
-//                    icon = {
-//                        Icon(
-//                            imageVector = Icons.Default.Report,
-//                            contentDescription = "Report",
-//                            tint = Color(0xFF6366F1)
-//                        )
-//                    },
-//                    label = { Text("Reports", fontSize = 15.sp) },
-//                    selected = currentScreen == ToggleScreen.Reports,
-//                    onClick = {
-//                        onNavigate(ToggleScreen.Reports)
-//                        scope.launch { drawerState.close() }
-//                    },
-//                    modifier = Modifier.padding(horizontal = 12.dp)
-//                )
+                NavigationDrawerItem(
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Default.Business,
+                            contentDescription = "Exhibition",
+                            tint = Color(0xFF6366F1)
+                        )
+                    },
+                    label = { Text("Exhibition", fontSize = 15.sp) },
+                    selected = currentScreen == ToggleScreen.Exhibition,
+                    onClick = {
+                        onNavigate(ToggleScreen.Exhibition)
+                        scope.launch { drawerState.close() }
+                    },
+                    modifier = Modifier.padding(horizontal = 12.dp)
+                )
 
                 NavigationDrawerItem(
                     icon = {
@@ -152,45 +163,90 @@ fun MainScreen(
             }
         }
     ) {
-
         Scaffold(
             topBar = {
                 TopAppBar(
                     title = {
                         Text(
-                            text = when (currentScreen) {
-                                ToggleScreen.Dashboard -> "Exhibition CRM"
-                                ToggleScreen.AllCustomers -> "All Customers"
-                                else -> ""
-                            },
+                            text = "Exhibition CRM",
                             fontWeight = FontWeight.Bold,
                             fontSize = 18.sp
                         )
                     },
 
                     navigationIcon = {
-                        IconButton(
-                            onClick = {
-                                scope.launch {
-                                    drawerState.open()
+                        when (currentScreen) {
+                            ToggleScreen.Dashboard ->
+                                IconButton(
+                                    onClick = {
+                                        scope.launch {
+                                            drawerState.open()
+                                        }
+                                    }
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .background(
+                                                color = Color(0xFFEEF0FF),
+                                                shape = RoundedCornerShape(10.dp)
+                                            ), contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Menu,
+                                            contentDescription = "Menu",
+                                            tint = Color(0xFF6366F1),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
                                 }
-                            }
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .background(
-                                        color = Color(0xFFEEF0FF),
-                                        shape = RoundedCornerShape(10.dp)
-                                    ), contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Menu,
-                                    contentDescription = "Menu",
-                                    tint = Color(0xFF6366F1),
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
+
+                            ToggleScreen.AllCustomers ->
+                                IconButton(
+                                    onClick = {
+                                        onBack()
+                                    }
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .background(
+                                                color = Color(0xFFEEF0FF),
+                                                shape = RoundedCornerShape(10.dp)
+                                            ), contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                            contentDescription = "Menu",
+                                            tint = Color(0xFF6366F1),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                            ToggleScreen.Exhibition ->
+                                IconButton(
+                                    onClick = {
+                                        onBack()
+                                    }
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(36.dp)
+                                            .background(
+                                                color = Color(0xFFEEF0FF),
+                                                shape = RoundedCornerShape(10.dp)
+                                            ), contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                            contentDescription = "Menu",
+                                            tint = Color(0xFF6366F1),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+
+                            else -> {}
                         }
                     },
 
@@ -243,16 +299,38 @@ fun MainScreen(
                             onNavigateToCustomers = {
                                 onNavigate(ToggleScreen.AllCustomers)
                             },
+                            onNavigateToAddCustomer = {
+                                onNavigate(ToggleScreen.AddCustomer)
+                            },
+                            onNavigateToExhibition = {
+                                onNavigate(ToggleScreen.Exhibition)
+                            },
                             customersList = customersList
                         )
                     }
 
                     ToggleScreen.AllCustomers -> {
                         AllCustomers(
-                            customers = customersList,
-                            onRemoveCustomer = onRemoveCustomer
+                            customers = customersList as MutableList<Customer>,
+                            exhibitions = exhibitions,
+                            onNavigateToAddCustomer = {
+                                onNavigate(ToggleScreen.AddCustomer)
+                            },
+                            selectedExhibition = selectedCustomerExhibition
                         )
+
                     }
+
+
+                    ToggleScreen.Exhibition -> Exhibition(
+                        exhibition = exhibitions,
+                        customer = customersList,
+                        onViewCustomers = onViewCustomers,
+                        onNavigateToAddExhibition ={
+                            onNavigate(ToggleScreen.AddExhibition)
+                        }
+
+                    )
                     else -> {}
                 }
             }
