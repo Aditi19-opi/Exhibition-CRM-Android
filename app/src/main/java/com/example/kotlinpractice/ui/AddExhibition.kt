@@ -45,6 +45,7 @@ fun AddExhibition(
     val focusManager = LocalFocusManager.current
     val scrollState = rememberScrollState()
 
+
     // Form state variables
     var exhibitionName by remember { mutableStateOf("") }
     var venue by remember { mutableStateOf("") }

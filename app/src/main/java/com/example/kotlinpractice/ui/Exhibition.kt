@@ -276,13 +276,32 @@ fun Exhibition(
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(filteredExhibitions) { item ->
-                    ExhibitionCards(
-                        exhibition = item,
-                        onClick = {
-                            selectedExhibition = item
+                if (filteredExhibitions.isEmpty()) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(180.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "No exhibitions available",
+                                color = Color(0xFF9CA3AF),
+                                fontSize = 13.sp
+                            )
                         }
-                    )
+                    }
+                } else {
+                    items(filteredExhibitions) { item ->
+
+                        ExhibitionCards(
+                            exhibition = item,
+                            onClick = {
+                                selectedExhibition = item
+                            }
+                        )
+                    }
+
                 }
             }
             selectedExhibition?.let { exhibition ->

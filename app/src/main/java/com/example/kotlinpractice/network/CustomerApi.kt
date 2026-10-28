@@ -271,6 +271,7 @@ object CustomerApi {
 
                 if (connection.responseCode !in 200..299) {
                     throw Exception("Failed to fetch exhibition statistics")
+
                 }
 
                 val response = connection.inputStream

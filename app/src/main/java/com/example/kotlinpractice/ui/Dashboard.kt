@@ -489,7 +489,7 @@ fun CustomerGrowthCard() {
                         Text(
                             text = "No exhibition customer data available",
                             color = Color(0xFF9CA3AF),
-                            fontSize = 13.sp
+                            fontSize = 13.sp,
                         )
                     }
                 }
@@ -749,8 +749,17 @@ fun RecentCustomerCard(customersList: List<Customer>, onViewAllClick: () -> Unit
 
             }
             Spacer(modifier = Modifier.height(16.dp))
-            customersList.take(5).forEach { customer ->
-                RecentCustomer(customer = customer)
+            if (customersList.count() == 0) {
+                Text(
+                    text = "No customers",
+                    color = Color.Gray,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+            } else {
+                customersList.take(5).forEach { customer ->
+                    RecentCustomer(customer = customer)
+                }
+
             }
         }
     }
